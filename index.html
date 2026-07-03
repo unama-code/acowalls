@@ -969,31 +969,39 @@ footer{background:#111;color:rgba(255,255,255,0.4);padding:40px 32px 32px}
         </div>
       </div>
 
-      <div class="contact-form fade-up">
+      <form class="contact-form fade-up" id="enquiryForm">
         <div class="form-title">Send an enquiry</div>
+
+        <!-- Web3Forms access key: replace with your own key from web3forms.com -->
+        <input type="hidden" name="access_key" value="YOUR_WEB3FORMS_ACCESS_KEY">
+        <input type="hidden" name="subject" value="New enquiry from ACO Walls website">
+        <input type="hidden" name="from_name" value="ACO Walls Website">
+        <!-- Honeypot spam trap: keep hidden, must stay empty -->
+        <input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
+
         <div class="form-row">
           <div class="form-group">
             <label>Your name</label>
-            <input type="text" placeholder="Full name">
+            <input type="text" name="name" placeholder="Full name" required>
           </div>
           <div class="form-group">
             <label>Company</label>
-            <input type="text" placeholder="Builder / developer name">
+            <input type="text" name="company" placeholder="Builder / developer name">
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Phone</label>
-            <input type="tel" placeholder="+91 00000 00000">
+            <input type="tel" name="phone" placeholder="+91 00000 00000">
           </div>
           <div class="form-group">
             <label>Email</label>
-            <input type="email" placeholder="you@company.com">
+            <input type="email" name="email" placeholder="you@company.com" required>
           </div>
         </div>
         <div class="form-group">
           <label>Project type</label>
-          <select>
+          <select name="project_type">
             <option value="" disabled selected>Select type</option>
             <option>Residential (High-rise)</option>
             <option>Commercial / Office</option>
@@ -1006,14 +1014,14 @@ footer{background:#111;color:rgba(255,255,255,0.4);padding:40px 32px 32px}
         </div>
         <div class="form-group">
           <label>Approx. wall scope (sqm)</label>
-          <input type="text" placeholder="e.g. 5,000 sqm">
+          <input type="text" name="wall_scope" placeholder="e.g. 5,000 sqm">
         </div>
         <div class="form-group">
           <label>Tell us more</label>
-          <textarea placeholder="Project location, floor count, timeline, panel size preference..."></textarea>
+          <textarea name="message" placeholder="Project location, floor count, timeline, panel size preference..."></textarea>
         </div>
-        <button class="form-submit" onclick="handleSubmit()">Submit Enquiry →</button>
-      </div>
+        <button type="submit" class="form-submit">Submit Enquiry →</button>
+      </form>
     </div>
   </div>
 </section>
@@ -1084,16 +1092,58 @@ function showTab(tab){
   event.target.classList.add('active');
 }
 
-function handleSubmit(){
-  const btn=document.querySelector('.form-submit');
-  btn.textContent='Enquiry sent. We\'ll be in touch shortly.';
-  btn.style.background='#16a34a';
-  btn.style.color='#fff';
-  setTimeout(()=>{
-    btn.textContent='Submit Enquiry →';
-    btn.style.background='';
-    btn.style.color='';
-  },4000);
+const enquiryForm=document.getElementById('enquiryForm');
+if(enquiryForm){
+  enquiryForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    const btn=enquiryForm.querySelector('.form-submit');
+    const originalText=btn.textContent;
+    const originalBg=btn.style.background;
+    const originalColor=btn.style.color;
+
+    btn.textContent='Sending...';
+    btn.disabled=true;
+
+    const formData=new FormData(enquiryForm);
+    const object=Object.fromEntries(formData);
+    const json=JSON.stringify(object);
+
+    try{
+      const response=await fetch('https://api.web3forms.com/submit',{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'Accept':'application/json'
+        },
+        body:json
+      });
+      const result=await response.json();
+
+      if(response.status===200){
+        btn.textContent='Enquiry sent. We\'ll be in touch shortly.';
+        btn.style.background='#16a34a';
+        btn.style.color='#fff';
+        enquiryForm.reset();
+      }else{
+        console.error('Web3Forms error:',result);
+        btn.textContent='Something went wrong. Please try again.';
+        btn.style.background='#dc2626';
+        btn.style.color='#fff';
+      }
+    }catch(error){
+      console.error('Submission error:',error);
+      btn.textContent='Something went wrong. Please try again.';
+      btn.style.background='#dc2626';
+      btn.style.color='#fff';
+    }
+
+    setTimeout(()=>{
+      btn.textContent=originalText;
+      btn.style.background=originalBg;
+      btn.style.color=originalColor;
+      btn.disabled=false;
+    },4000);
+  });
 }
 
 // Scroll animations
